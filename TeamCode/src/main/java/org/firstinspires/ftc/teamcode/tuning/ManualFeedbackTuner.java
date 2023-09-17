@@ -4,9 +4,11 @@ import com.acmerobotics.roadrunner.Pose2d;
 // TODO: remove Actions from the core module?
 import com.acmerobotics.roadrunner.ftc.Actions;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 
+@TeleOp(group = "Test")
 public final class ManualFeedbackTuner extends LinearOpMode {
     public static double DISTANCE = 64;
 

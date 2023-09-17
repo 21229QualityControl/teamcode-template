@@ -104,69 +104,6 @@ public final class MecanumDrive {
 
     private final LinkedList<Pose2d> poseHistory = new LinkedList<>();
 
-    public class DriveLocalizer implements Localizer {
-        public final Encoder leftFront, leftRear, rightRear, rightFront;
-
-        private int lastLeftFrontPos, lastLeftRearPos, lastRightRearPos, lastRightFrontPos;
-        private Rotation2d lastHeading;
-
-        public DriveLocalizer() {
-            leftFront = new OverflowEncoder(new RawEncoder(MecanumDrive.this.leftFront));
-            leftRear = new OverflowEncoder(new RawEncoder(MecanumDrive.this.leftBack));
-            rightRear = new OverflowEncoder(new RawEncoder(MecanumDrive.this.rightBack));
-            rightFront = new OverflowEncoder(new RawEncoder(MecanumDrive.this.rightFront));
-
-            lastLeftFrontPos = leftFront.getPositionAndVelocity().position;
-            lastLeftRearPos = leftRear.getPositionAndVelocity().position;
-            lastRightRearPos = rightRear.getPositionAndVelocity().position;
-            lastRightFrontPos = rightFront.getPositionAndVelocity().position;
-
-            lastHeading = Rotation2d.exp(imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS));
-        }
-
-        @Override
-        public Twist2dDual<Time> update() {
-            PositionVelocityPair leftFrontPosVel = leftFront.getPositionAndVelocity();
-            PositionVelocityPair leftRearPosVel = leftRear.getPositionAndVelocity();
-            PositionVelocityPair rightRearPosVel = rightRear.getPositionAndVelocity();
-            PositionVelocityPair rightFrontPosVel = rightFront.getPositionAndVelocity();
-
-            Rotation2d heading = Rotation2d.exp(imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS));
-            double headingDelta = heading.minus(lastHeading);
-
-            Twist2dDual<Time> twist = kinematics.forward(new MecanumKinematics.WheelIncrements<>(
-                    new DualNum<Time>(new double[]{
-                            (leftFrontPosVel.position - lastLeftFrontPos),
-                            leftFrontPosVel.velocity,
-                    }).times(PARAMS.inPerTick),
-                    new DualNum<Time>(new double[]{
-                            (leftRearPosVel.position - lastLeftRearPos),
-                            leftRearPosVel.velocity,
-                    }).times(PARAMS.inPerTick),
-                    new DualNum<Time>(new double[]{
-                            (rightRearPosVel.position - lastRightRearPos),
-                            rightRearPosVel.velocity,
-                    }).times(PARAMS.inPerTick),
-                    new DualNum<Time>(new double[]{
-                            (rightFrontPosVel.position - lastRightFrontPos),
-                            rightFrontPosVel.velocity,
-                    }).times(PARAMS.inPerTick)
-            ));
-
-            lastLeftFrontPos = leftFrontPosVel.position;
-            lastLeftRearPos = leftRearPosVel.position;
-            lastRightRearPos = rightRearPosVel.position;
-            lastRightFrontPos = rightFrontPosVel.position;
-
-            lastHeading = heading;
-
-            return new Twist2dDual<>(
-                    twist.line,
-                    DualNum.cons(headingDelta, twist.angle.drop(1))
-            );
-        }
-    }
-
     public MecanumDrive(HardwareMap hardwareMap, Pose2d pose) {
         this.pose = pose;
 
@@ -194,7 +131,7 @@ public final class MecanumDrive {
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
-        localizer = new DriveLocalizer();
+        localizer = new TwoDeadWheelLocalizer(hardwareMap, imu, PARAMS.inPerTick);
 
         FlightRecorder.write("MECANUM_PARAMS", PARAMS);
     }
