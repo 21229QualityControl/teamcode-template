@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode.opmode;
 
 import com.acmerobotics.dashboard.config.Config;
-import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.PoseVelocity2d;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -10,6 +9,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 import org.firstinspires.ftc.teamcode.subsystems.Memory;
+import org.firstinspires.ftc.teamcode.util.ActionScheduler;
 import org.firstinspires.ftc.teamcode.util.GamePadController;
 import org.firstinspires.ftc.teamcode.util.SmartGameTimer;
 
@@ -23,9 +23,11 @@ public class ManualDrive extends LinearOpMode {
    private SmartGameTimer smartGameTimer;
    private GamePadController g1, g2;
    private MecanumDrive drive;
+   private ActionScheduler sched;
+
    @Override
    public void runOpMode() throws InterruptedException {
-      telemetry.addData("Initializing...", "");
+      telemetry.addLine("Initializing...");
       telemetry.update();
 
       // Init
@@ -33,6 +35,7 @@ public class ManualDrive extends LinearOpMode {
       g2 = new GamePadController(gamepad2);
       g1.update();
       g2.update();
+      sched = new ActionScheduler();
       drive = new MecanumDrive(hardwareMap, Memory.LAST_POSE);
 
       if (Memory.RAN_AUTO) {
@@ -42,7 +45,7 @@ public class ManualDrive extends LinearOpMode {
       }
 
       // Ready!
-      telemetry.addData("Ready!", "");
+      telemetry.addLine("Ready!");
       telemetry.update();
       waitForStart();
 
@@ -68,12 +71,9 @@ public class ManualDrive extends LinearOpMode {
          move();
 
          drive.updatePoseEstimate();
+         sched.update();
 
-         // Update subsystems
-
-         telemetry.addData("x", drive.pose.position.x);
-         telemetry.addData("y", drive.pose.position.y);
-         telemetry.addData("heading", drive.pose.heading);
+         telemetry.addData("Time left", smartGameTimer.formattedString() + " (" + smartGameTimer.status() + ")");
          telemetry.update();
       }
 
